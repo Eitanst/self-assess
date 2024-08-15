@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>כלי למיפוי עצמי של מיומנויות ניהול</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        canvas {
+            display: block;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>כלי למיפוי עצמי של מיומנויות ניהול</h1>
+        <div id="assessment">
+            <label for="assessment-date">תאריך ביצוע המיפוי:</label>
+            <input type="date" id="assessment-date" required>
+            <label for="assessor-name">שם מבצע/ת המיפוי:</label>
+            <input type="text" id="assessor-name" required>
+            <div id="dimensions"></div>
+        </div>
+        <button onclick="showResults()">הצג תוצאות</button>
+        <button id="save-chart" style="display:none;">שמור תרשים כתמונה</button>
+        <div id="results"></div>
+        <canvas id="radarChart" width="600" height="600" style="display:none;"></canvas>
+    </div>
+
+    <script>
+        const dimensions = [
+            "עיצוב חזון ותכנון אסטרטגי",
+            "שיפור ההוראה, הלמידה והחינוך",
+            "הנהגת צוות בית-הספר ופיתוחו המקצועי",
+            "ניהול קשרי גומלין עם הקהילה",
+            "כשירויות אישיות"
+        ];
+
+        function createAssessment() {
+            const container = document.getElementById('dimensions');
+            dimensions.forEach((dim, index) => {
+                container.innerHTML += `
+                    <h3>${index + 1}. ${dim}</h3>
+                    <label>ציון (0-5):</label>
+                    <input type="number" id="score-${index}" min="0" max="5">
+                    <label>אילו עדויות מבססות את הציון שניתן במדד זה?</label>
+                    <textarea id="evidence-${index}"></textarea>
+                    <label>איך ברצונך לשפר או לבסס את השליטה במיומנות זו השנה?</label>
+                    <textarea id="improvement-${index}"></textarea>
+                `;
+            });
+        }
+
+        function showResults() {
+            const assessmentDate = document.getElementById('assessment-date').value;
+            const assessorName = document.getElementById('assessor-name').value;
+            if (!assessmentDate || !assessorName) {
+                alert('נא להזין תאריך ביצוע המיפוי ושם מבצע/ת המיפוי');
+                return;
+            }
+
+            let resultsHTML = `<h2>תוצאות ההערכה</h2>
+                               <p>תאריך: ${assessmentDate}</p>
+                               <p>שם המבצע/ת: ${assessorName}</p>`;
+            
+            const results = dimensions.map((dim, index) => {
+                const score = document.getElementById(`score-${index}`).value;
+                const evidence = document.getElementById(`evidence-${index}`).value;
+                const improvement = document.getElementById(`improvement-${index}`).value;
+                resultsHTML += `
+                    <h3>${index + 1}. ${dim}</h3>
+                    <p>ציון: ${score}</p>
+                    <p>עדויות: ${evidence}</p>
+                    <p>תוכנית לשיפור: ${improvement}</p>
+                `;
+                return { dimension: dim, score, evidence, improvement };
+            });
+
+            document.getElementById('results').innerHTML = resultsHTML;
+            drawRadarChart(results, assessmentDate, assessorName);
+            document.getElementById('save-chart').style.display = 'block';
+        }
+
+        function drawRadarChart(results, assessmentDate, assessorName) {
+            const canvas = document.getElementById('radarChart');
+            canvas.style.display = 'block';
+            const ctx = canvas.getContext('2d');
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 100;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw title
+            ctx.font = 'bold 16px Arial';
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            ctx.fillText(`מיפוי מיומנויות ניהול - ${assessmentDate}`, centerX, 30);
+            ctx.font = '14px Arial';
+            ctx.fillText(`מבצע/ת המיפוי: ${assessorName}`, centerX, 50);
+
+            // Draw background circles
+            for (let i = 1; i <= 5; i++) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius * i / 5, 0, 2 * Math.PI);
+                ctx.strokeStyle = 'rgba(200, 200, 200, 0.5)';
+                ctx.stroke();
+            }
+
+            // Draw axes and labels
+            results.forEach((result, index) => {
+                const angle = index * 2 * Math.PI / results.length;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(centerX + radius * Math.cos(angle), centerY + radius * Math.sin(angle));
+                ctx.strokeStyle = 'rgba(150, 150, 150, 0.8)';
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(centerX + (radius + 30) * Math.cos(angle), centerY + (radius + 30) * Math.sin(angle));
+                ctx.rotate(angle + Math.PI / 2);
+                ctx.textAlign = 'center';
+                ctx.font = 'bold 12px Arial';
+                ctx.fillStyle = '#0066cc';
+                ctx.fillText(`${index + 1}. ${result.dimension}`, 0, 0);
+                
+                ctx.font = '10px Arial';
+                ctx.fillStyle = '#006600';
+                wrapText(ctx, result.improvement, 0, 20, 150, 12);
+                
+                ctx.restore();
+            });
+
+            // Draw data points
+            ctx.beginPath();
+            results.forEach((result, index) => {
+                const angle = index * 2 * Math.PI / results.length;
+                const score = parseFloat(result.score);
+                const x = centerX + radius * (score / 5) * Math.cos(angle);
+                const y = centerY + radius * (score / 5) * Math.sin(angle);
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+                
+                ctx.fillStyle = 'rgba(75, 192, 192, 1)';
+                ctx.fillText(score, x, y);
+            });
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(75, 192, 192, 0.2)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(75, 192, 192, 1)';
+            ctx.stroke();
+        }
+
+        function wrapText(context, text, x, y, maxWidth, lineHeight) {
+            const words = text.split(' ');
+            let line = '';
+
+            for(let n = 0; n < words.length; n++) {
+                const testLine = line + words[n] + ' ';
+                const metrics = context.measureText(testLine);
+                const testWidth = metrics.width;
+                if (testWidth > maxWidth && n > 0) {
+                    context.fillText(line, x, y);
+                    line = words[n] + ' ';
+                    y += lineHeight;
+                }
+                else {
+                    line = testLine;
+                }
+            }
+            context.fillText(line, x, y);
+        }
+
+        function saveChartAsImage() {
+            const canvas = document.getElementById('radarChart');
+            const image = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+            const link = document.createElement('a');
+            link.download = 'radar-chart.png';
+            link.href = image;
+            link.click();
+        }
+
+        createAssessment();
+        document.getElementById('save-chart').addEventListener('click', saveChartAsImage);
+    </script>
+</body>
+</html>
